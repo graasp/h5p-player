@@ -426,12 +426,14 @@ export class H5PStandalone {
 
     const mainLibrary = await this.findMainLibrary(
       H5PJsonContent,
-      librariesPath
+      librariesPath,
+      options?.assetsRequestFetchOptions
     );
 
     const dependencies = await this.findAllDependencies(
       H5PJsonContent,
-      librariesPath
+      librariesPath,
+      options?.assetsRequestFetchOptions
     );
 
     let { styles, scripts } = this.sortDependencies(
@@ -528,6 +530,7 @@ export class H5PStandalone {
     H5PIntegration.url = contentId;
     H5PIntegration.urlLibraries = librariesPath;
     H5PIntegration.postUserStatistics = !!options.postUserStatistics;
+    H5PIntegration.reportingIsEnabled = !!options.reportingIsEnabled;
 
     //since the default is false, only set if it's a number?
     if (options.saveFreq && typeof options.saveFreq === "number") {
@@ -721,7 +724,8 @@ export class H5PStandalone {
    */
   async findMainLibrary(
     h5pJsonContent: H5PPackageDefinition,
-    librariesPath: string
+    librariesPath: string,
+    assetsRequestFetchOptions?: RequestInit
   ): Promise<H5PLibraryDefinition> {
     const mainLibraryInfo = h5pJsonContent.preloadedDependencies.find(
       (dependency) => dependency.machineName === h5pJsonContent.mainLibrary
@@ -729,7 +733,10 @@ export class H5PStandalone {
 
     const mainLibraryFolderName = this.libraryToFolderName(mainLibraryInfo);
     const libraryFileUrl = `${librariesPath}/${mainLibraryFolderName}/library.json`;
-    return getJSON<H5PLibraryDefinition>(libraryFileUrl);
+    return getJSON<H5PLibraryDefinition>(
+      libraryFileUrl,
+      assetsRequestFetchOptions
+    );
   }
 
   /**
@@ -738,7 +745,8 @@ export class H5PStandalone {
    */
   async findAllDependencies(
     h5pJsonContent: H5PPackageDefinition,
-    librariesPath
+    librariesPath: string,
+    assetsRequestFetchOptions?: RequestInit
   ): Promise<LocalLibraryDependency[]> {
     const directDependencyFolderNames: string[] =
       h5pJsonContent.preloadedDependencies.map((dependency) =>
@@ -748,7 +756,8 @@ export class H5PStandalone {
     return this.loadDependencies(
       directDependencyFolderNames,
       [],
-      librariesPath
+      librariesPath,
+      assetsRequestFetchOptions
     );
   }
 
@@ -765,13 +774,18 @@ export class H5PStandalone {
   async loadDependencies(
     toFind: string[],
     alreadyFound: LocalLibraryDependency[],
-    librariesPath: string
+    librariesPath: string,
+    assetsRequestFetchOptions?: RequestInit
   ): Promise<LocalLibraryDependency[]> {
     const dependencies = alreadyFound;
     const findNext = [];
 
     const dependenciesDiscoveryRequests = toFind.map((libraryFolderName) => {
-      return this.findLibraryDependencies(libraryFolderName, librariesPath);
+      return this.findLibraryDependencies(
+        libraryFolderName,
+        librariesPath,
+        assetsRequestFetchOptions
+      );
     });
 
     const discoveredDependencies = await Promise.all(
@@ -830,7 +844,12 @@ export class H5PStandalone {
     });
 
     if (findNext.length > 0) {
-      return this.loadDependencies(findNext, dependencies, librariesPath);
+      return this.loadDependencies(
+        findNext,
+        dependencies,
+        librariesPath,
+        assetsRequestFetchOptions
+      );
     }
     return dependencies;
   }
@@ -844,10 +863,14 @@ export class H5PStandalone {
    */
   async findLibraryDependencies(
     libraryFolderName: string,
-    librariesPath: string
+    librariesPath: string,
+    assetsRequestFetchOptions?: RequestInit
   ): Promise<LocalLibraryDependency> {
     const libraryFileUrl = `${librariesPath}/${libraryFolderName}/library.json`;
-    const library = await getJSON<H5PLibraryDefinition>(libraryFileUrl);
+    const library = await getJSON<H5PLibraryDefinition>(
+      libraryFileUrl,
+      assetsRequestFetchOptions
+    );
 
     let dependencies: string[] = [];
     if (library.preloadedDependencies) {
