@@ -1,5 +1,58 @@
-# H5P Standalone Player 3.x [![CircleCI](https://circleci.com/gh/tunapanda/h5p-standalone.svg?style=svg)](https://circleci.com/gh/tunapanda/h5p-standalone)
-Display H5P content without the need for an H5P server.
+# H5P Player for Graasp
+
+This package is an adaptation of [the H5P Standalone by Jake Lee Kennedy](https://github.com/tunapanda/h5p-standalone) it allows to display H5P content without the need for an H5P server.
+
+## Structure
+
+This standalone player consists of:
+
+- `index.html`: entrypoint for the integration.
+- `src/h5p-standalone.ts`: the standalone implementation of the h5p player
+- `vendor`: the vendor files provided by h5p.org to integrate h5p
+
+## Deployment
+
+This package is configured to expect a certain deployment.
+
+It assumes that the package support files will be deployed at the root of a website under the `h5p-integration` path. And that there will be a sibling directory called `h5p-content` in which the h5p packages uploaded by users will be stored and hosted.
+
+```txt
+/
+|- h5p-integration
+    |- index.html        # entrypoint of the integration
+    |- assets/
+      |- index.js       # JS entrypoint
+    |- js/              # vendor provided JS libraries
+      |- h5p.js
+      |- ...
+    |- styles/          # vendor provided styles
+      |- h5p.css
+      |- ...
+|- h5p-content/
+    |- /12345
+      |-...           # h5p package content
+    |- ...
+```
+
+When building this package you will get the necessary files to populate the `h5p-integration` directory
+
+## Building
+
+We use `vite` to build the assets for this package.
+You will need to create a `.env.production` file to store some env variables needed for building.
+
+```sh
+VITE_TARGET_ORIGINS=<comma separated list of origins you want to make available to the integration>
+```
+
+This is used to allow contacting origins for resizing h5p frames on content change.
+
+## Integration in Graasp
+
+Usually you will want to set this as the `src` attribute of an iframe inside which you wish to display an H5P. The index files will read the `content` search param appended to the url to know which h5p package to ask for. This is the item id assigned to the h5p package.
+
+<details>
+<summary>Original package instructions</summary>
 
 ## Installation & Usage
 
@@ -154,6 +207,7 @@ The standalone H5P player constructor `new H5PStandalone.H5P(el, options)` or `n
 2. A JSON object with the following options:
 
 ### H5P Options
+
 1) Basic options
 
 **Option name**|**Required**|**Description**
@@ -191,11 +245,12 @@ The standalone H5P player constructor `new H5PStandalone.H5P(el, options)` or `n
 `user.name` | Yes, if `user` is provided | String. Name of the xAPI actor.
 `user.mail` | Yes, if `user` is provided | String. Email of the user, uniquely identifying the xAPI actor.
 
-
 **Note:**
+
 - One can use absolute URL for `frameCss`, `frameJs`, and for other path options(`h5pJsonPath`,`librariesPath`, & `librariesPath`)
 - Any path that starts with a forward slash `/` is treated as relative to the site root.
 - Any path starting with a dot is treated to be in respect to the current page directory.
+
 ----
 #### Example with Advanced Options
 ```javascript
@@ -234,6 +289,7 @@ new H5P(el, options)
 ```
 
 ### Multiple H5P players on the same page
+
 To render multiple H5Ps, your code **must** be async aware.
 
 ```javascript
@@ -364,7 +420,6 @@ You are responsible for implementing the backend server logic at the specified `
 *   **POST Request**: When H5P needs to save the state (triggered by `saveFreq`), it will make a POST request to the `contentUserDataUrl`. The body of the POST request will contain the user state data (typically a JSON string representing the H5P state). Your server should store this data, associating it with the user and content ID.
 
 The `contentUserDataUrl` can be structured flexibly to suit your backend routing and data model. H5P replaces known placeholders (like `:contentId`, `:dataType`, `:subContentId`) in the URL string before making the request.
-
 
 ### Extracting H5P
 An `.h5p` file is a zip archive. To use its contents with this player:
